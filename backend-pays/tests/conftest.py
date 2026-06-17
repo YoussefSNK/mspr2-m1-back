@@ -1,8 +1,12 @@
 """
 Fixtures partagées pour tous les tests.
-Utilise SQLite en mémoire pour l'isolation : pas de PostgreSQL requis pour les tests unitaires.
+Utilise SQLite sur un fichier temporaire unique par test pour que
+toutes les connexions voient les mêmes tables et données.
 """
 import pytest
+import tempfile
+import os
+from contextlib import asynccontextmanager
 from datetime import datetime, timezone, timedelta
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
@@ -11,39 +15,48 @@ from sqlalchemy.orm import sessionmaker, Session
 from app.core.database import Base, get_db
 from app.main import app
 
-TEST_DATABASE_URL = "sqlite:///:memory:"
 
-engine_test = create_engine(
-    TEST_DATABASE_URL,
-    connect_args={"check_same_thread": False},
-)
-TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine_test)
+@asynccontextmanager
+async def lifespan_test(fastapi_app):
+    """Lifespan neutre : pas de connexion PostgreSQL ni MQTT pendant les tests."""
+    yield
 
 
 @pytest.fixture(scope="function")
-def db() -> Session:
-    Base.metadata.create_all(bind=engine_test)
-    session = TestingSessionLocal()
+def db():
+    # Fichier temporaire — toutes les connexions voient les mêmes tables
+    db_fd, db_path = tempfile.mkstemp(suffix=".db")
+    os.close(db_fd)
+    url = f"sqlite:///{db_path}"
+
+    engine = create_engine(url, connect_args={"check_same_thread": False})
+    Base.metadata.create_all(bind=engine)
+    SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+    session = SessionLocal()
+
     try:
         yield session
     finally:
         session.close()
-        Base.metadata.drop_all(bind=engine_test)
+        engine.dispose()
+        os.unlink(db_path)
 
 
 @pytest.fixture(scope="function")
-def client(db: Session) -> TestClient:
+def client(db: Session):
     def override_get_db():
-        try:
-            yield db
-        finally:
-            pass
+        yield db
 
+    app.router.lifespan_context = lifespan_test
     app.dependency_overrides[get_db] = override_get_db
+
     with TestClient(app, raise_server_exceptions=True) as c:
         yield c
+
     app.dependency_overrides.clear()
 
+
+# ── Payloads de test ──────────────────────────────────────────────────────────
 
 @pytest.fixture
 def lot_bresil_payload() -> dict:
