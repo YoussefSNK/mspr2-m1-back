@@ -1,0 +1,156 @@
+services:
+
+  # ── Brésil ────────────────────────────────────────────────────────
+  db-bresil:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: futurekawa
+      POSTGRES_PASSWORD: futurekawa
+      POSTGRES_DB: futurekawa_bresil
+    volumes:
+      - db_bresil_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U futurekawa"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  mosquitto-bresil:
+    image: eclipse-mosquitto:2
+    volumes:
+      - ./mosquitto/config:/mosquitto/config:ro
+      - mosquitto_bresil_data:/mosquitto/data
+      - mosquitto_bresil_log:/mosquitto/log
+    ports:
+      - "1883:1883"
+
+  backend-bresil:
+    build:
+      context: ./backend-pays
+    environment:
+      PAYS: bresil
+      DATABASE_URL: postgresql://futurekawa:futurekawa@db-bresil:5432/futurekawa_bresil
+      MQTT_BROKER_HOST: mosquitto-bresil
+      MQTT_BROKER_PORT: 1883
+      EMAIL_RESPONSABLE_BRESIL: responsable.bresil@futurekawa.com
+      EMAIL_RESPONSABLE_EQUATEUR: responsable.equateur@futurekawa.com
+      EMAIL_RESPONSABLE_COLOMBIE: responsable.colombie@futurekawa.com
+    ports:
+      - "8001:8000"
+    depends_on:
+      db-bresil:
+        condition: service_healthy
+      mosquitto-bresil:
+        condition: service_started
+
+  # ── Équateur ──────────────────────────────────────────────────────
+  db-equateur:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: futurekawa
+      POSTGRES_PASSWORD: futurekawa
+      POSTGRES_DB: futurekawa_equateur
+    volumes:
+      - db_equateur_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U futurekawa"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  mosquitto-equateur:
+    image: eclipse-mosquitto:2
+    volumes:
+      - ./mosquitto/config:/mosquitto/config:ro
+      - mosquitto_equateur_data:/mosquitto/data
+      - mosquitto_equateur_log:/mosquitto/log
+    ports:
+      - "1884:1883"
+
+  backend-equateur:
+    build:
+      context: ./backend-pays
+    environment:
+      PAYS: equateur
+      DATABASE_URL: postgresql://futurekawa:futurekawa@db-equateur:5432/futurekawa_equateur
+      MQTT_BROKER_HOST: mosquitto-equateur
+      MQTT_BROKER_PORT: 1883
+      EMAIL_RESPONSABLE_BRESIL: responsable.bresil@futurekawa.com
+      EMAIL_RESPONSABLE_EQUATEUR: responsable.equateur@futurekawa.com
+      EMAIL_RESPONSABLE_COLOMBIE: responsable.colombie@futurekawa.com
+    ports:
+      - "8002:8000"
+    depends_on:
+      db-equateur:
+        condition: service_healthy
+      mosquitto-equateur:
+        condition: service_started
+
+  # ── Colombie ──────────────────────────────────────────────────────
+  db-colombie:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: futurekawa
+      POSTGRES_PASSWORD: futurekawa
+      POSTGRES_DB: futurekawa_colombie
+    volumes:
+      - db_colombie_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U futurekawa"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  mosquitto-colombie:
+    image: eclipse-mosquitto:2
+    volumes:
+      - ./mosquitto/config:/mosquitto/config:ro
+      - mosquitto_colombie_data:/mosquitto/data
+      - mosquitto_colombie_log:/mosquitto/log
+    ports:
+      - "1885:1883"
+
+  backend-colombie:
+    build:
+      context: ./backend-pays
+    environment:
+      PAYS: colombie
+      DATABASE_URL: postgresql://futurekawa:futurekawa@db-colombie:5432/futurekawa_colombie
+      MQTT_BROKER_HOST: mosquitto-colombie
+      MQTT_BROKER_PORT: 1883
+      EMAIL_RESPONSABLE_BRESIL: responsable.bresil@futurekawa.com
+      EMAIL_RESPONSABLE_EQUATEUR: responsable.equateur@futurekawa.com
+      EMAIL_RESPONSABLE_COLOMBIE: responsable.colombie@futurekawa.com
+    ports:
+      - "8003:8000"
+    depends_on:
+      db-colombie:
+        condition: service_healthy
+      mosquitto-colombie:
+        condition: service_started
+
+  # ── Siège (central) ───────────────────────────────────────────────
+  backend-central:
+    build:
+      context: ./backend-central
+    environment:
+      BACKEND_BRESIL_URL: http://backend-bresil:8000
+      BACKEND_EQUATEUR_URL: http://backend-equateur:8000
+      BACKEND_COLOMBIE_URL: http://backend-colombie:8000
+    ports:
+      - "9000:9000"
+    depends_on:
+      - backend-bresil
+      - backend-equateur
+      - backend-colombie
+
+volumes:
+  db_bresil_data:
+  db_equateur_data:
+  db_colombie_data:
+  mosquitto_bresil_data:
+  mosquitto_bresil_log:
+  mosquitto_equateur_data:
+  mosquitto_equateur_log:
+  mosquitto_colombie_data:
+  mosquitto_colombie_log:
