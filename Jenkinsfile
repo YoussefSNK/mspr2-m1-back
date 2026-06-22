@@ -15,18 +15,21 @@ pipeline {
             }
         }
 
-        stage('Install — backend-pays') {
-            steps {
-                dir('backend-pays') {
-                    sh 'pip install -e ".[test,lint]"'
+        stage('Install') {
+            parallel {
+                stage('Install — backend-pays') {
+                    steps {
+                        dir('backend-pays') {
+                            sh 'pip install -e ".[test,lint]"'
+                        }
+                    }
                 }
-            }
-        }
-
-        stage('Install — backend-central') {
-            steps {
-                dir('backend-central') {
-                    sh 'pip install -e ".[test,lint]"'
+                stage('Install — backend-central') {
+                    steps {
+                        dir('backend-central') {
+                            sh 'pip install -e ".[test,lint]"'
+                        }
+                    }
                 }
             }
         }
