@@ -4,6 +4,7 @@ pipeline {
     environment {
         PYTHON_VERSION = '3.11'
         DOCKER_BUILDKIT = '1'
+        IMAGE_TAG = "${env.GIT_COMMIT ? env.GIT_COMMIT.take(8) : 'latest'}"
     }
 
     stages {
@@ -98,14 +99,14 @@ pipeline {
             parallel {
                 stage('Build backend-pays') {
                     steps {
-                        sh 'docker build -t futurekawa/backend-pays:${GIT_COMMIT?.take(8) ?: "latest"} ./backend-pays'
-                        sh 'docker tag futurekawa/backend-pays:${GIT_COMMIT?.take(8) ?: "latest"} futurekawa/backend-pays:latest'
+                        sh "docker build -t futurekawa/backend-pays:${IMAGE_TAG} ./backend-pays"
+                        sh "docker tag futurekawa/backend-pays:${IMAGE_TAG} futurekawa/backend-pays:latest"
                     }
                 }
                 stage('Build backend-central') {
                     steps {
-                        sh 'docker build -t futurekawa/backend-central:${GIT_COMMIT?.take(8) ?: "latest"} ./backend-central'
-                        sh 'docker tag futurekawa/backend-central:${GIT_COMMIT?.take(8) ?: "latest"} futurekawa/backend-central:latest'
+                        sh "docker build -t futurekawa/backend-central:${IMAGE_TAG} ./backend-central"
+                        sh "docker tag futurekawa/backend-central:${IMAGE_TAG} futurekawa/backend-central:latest"
                     }
                 }
             }
