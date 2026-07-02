@@ -10,10 +10,10 @@ services:
     volumes:
       - db_bresil_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U futurekawa"]
+      test: ["CMD-SHELL", "pg_isready -U futurekawa -d futurekawa_bresil"]
       interval: 5s
       timeout: 5s
-      retries: 5
+      retries: 10
 
   mosquitto-bresil:
     image: eclipse-mosquitto:2
@@ -53,10 +53,10 @@ services:
     volumes:
       - db_equateur_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U futurekawa"]
+      test: ["CMD-SHELL", "pg_isready -U futurekawa -d futurekawa_equateur"]
       interval: 5s
       timeout: 5s
-      retries: 5
+      retries: 10
 
   mosquitto-equateur:
     image: eclipse-mosquitto:2
@@ -96,10 +96,10 @@ services:
     volumes:
       - db_colombie_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U futurekawa"]
+      test: ["CMD-SHELL", "pg_isready -U futurekawa -d futurekawa_colombie"]
       interval: 5s
       timeout: 5s
-      retries: 5
+      retries: 10
 
   mosquitto-colombie:
     image: eclipse-mosquitto:2
