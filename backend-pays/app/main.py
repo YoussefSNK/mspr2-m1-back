@@ -16,6 +16,7 @@ logger = logging.getLogger(__name__)
 settings = get_settings()
 
 _mqtt_client = None
+_scheduler = None
 
 
 @asynccontextmanager
@@ -30,12 +31,22 @@ async def lifespan(app: FastAPI):
     except Exception as exc:
         logger.warning("MQTT non démarré (mode dégradé) : %s", exc)
 
+    global _scheduler
+    try:
+        from app.services.scheduler_service import start_scheduler
+        _scheduler = start_scheduler()
+    except Exception as exc:
+        logger.warning("Scheduler non démarré : %s", exc)
+
     yield
 
     if _mqtt_client:
         _mqtt_client.loop_stop()
         _mqtt_client.disconnect()
         logger.info("Client MQTT arrêté")
+
+    if _scheduler:
+        _scheduler.stop()
 
 
 app = FastAPI(

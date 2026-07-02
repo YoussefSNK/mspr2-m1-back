@@ -30,6 +30,13 @@ class Settings(BaseSettings):
     # CORS
     CORS_ORIGINS: list[str] = ["*"]
 
+    # Scheduler — vérification périodique des lots trop anciens
+    SCHEDULER_ENABLED: bool = True
+    # Intervalle entre deux vérifications, en secondes (défaut : 24 h).
+    # La péremption est un seuil en jours (> 365 j) : une vérification
+    # quotidienne suffit, inutile de requêter plus souvent.
+    SCHEDULER_INTERVAL_SECONDS: int = 24 * 60 * 60
+
 
 SEUILS_PAYS: dict[str, dict[str, float]] = {
     "bresil": {"temperature": 29.0, "humidite": 55.0},
