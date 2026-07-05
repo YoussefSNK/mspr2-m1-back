@@ -1,8 +1,7 @@
-pipeline {
-    agent any
+pipeline {.
+    agent none
 
     environment {
-        PYTHON_VERSION = '3.11'
         DOCKER_BUILDKIT = '1'
         IMAGE_TAG = "${env.GIT_COMMIT ? env.GIT_COMMIT.take(8) : 'latest'}"
     }
@@ -10,53 +9,24 @@ pipeline {
     stages {
 
         stage('Checkout') {
+            agent any
             steps {
                 checkout scm
                 echo "Code récupéré : ${env.GIT_BRANCH} @ ${env.GIT_COMMIT?.take(8)}"
             }
         }
 
-        stage('Install') {
-            parallel {
-                stage('Install — backend-pays') {
-                    steps {
-                        dir('backend-pays') {
-                            sh 'pip install -e ".[test,lint]"'
-                        }
-                    }
-                }
-                stage('Install — backend-central') {
-                    steps {
-                        dir('backend-central') {
-                            sh 'pip install -e ".[test,lint]"'
-                        }
-                    }
+        stage('backend-pays — lint & tests') {
+            agent {
+                docker {
+                    image 'python:3.11-slim'
+                    args '-u root'
                 }
             }
-        }
-
-        stage('Lint') {
-            parallel {
-                stage('Ruff — pays') {
-                    steps {
-                        dir('backend-pays') {
-                            sh 'ruff check app/ tests/'
-                        }
-                    }
-                }
-                stage('Ruff — central') {
-                    steps {
-                        dir('backend-central') {
-                            sh 'ruff check app/ tests/'
-                        }
-                    }
-                }
-            }
-        }
-
-        stage('Tests — backend-pays') {
             steps {
                 dir('backend-pays') {
+                    sh 'pip install --no-cache-dir -e ".[test,lint]"'
+                    sh 'ruff check app/ tests/'
                     sh '''
                         pytest tests/ \
                           --cov=app \
@@ -70,14 +40,22 @@ pipeline {
             post {
                 always {
                     junit 'backend-pays/test-results.xml'
-                    cobertura coberturaReportFile: 'backend-pays/coverage.xml'
+                    archiveArtifacts artifacts: 'backend-pays/coverage.xml', fingerprint: true
                 }
             }
         }
 
-        stage('Tests — backend-central') {
+        stage('backend-central — lint & tests') {
+            agent {
+                docker {
+                    image 'python:3.11-slim'
+                    args '-u root'
+                }
+            }
             steps {
                 dir('backend-central') {
+                    sh 'pip install --no-cache-dir -e ".[test,lint]"'
+                    sh 'ruff check app/ tests/'
                     sh '''
                         pytest tests/ \
                           --cov=app \
@@ -91,31 +69,19 @@ pipeline {
             post {
                 always {
                     junit 'backend-central/test-results.xml'
+                    archiveArtifacts artifacts: 'backend-central/coverage.xml', fingerprint: true
                 }
             }
         }
 
         stage('Build Docker Images') {
-            parallel {
-                stage('Build backend-pays') {
-                    steps {
-                        sh "docker build -t futurekawa/backend-pays:${IMAGE_TAG} ./backend-pays"
-                        sh "docker tag futurekawa/backend-pays:${IMAGE_TAG} futurekawa/backend-pays:latest"
-                    }
-                }
-                stage('Build backend-central') {
-                    steps {
-                        sh "docker build -t futurekawa/backend-central:${IMAGE_TAG} ./backend-central"
-                        sh "docker tag futurekawa/backend-central:${IMAGE_TAG} futurekawa/backend-central:latest"
-                    }
-                }
-            }
-        }
-
-        stage('Archive') {
+            agent any
             steps {
-                archiveArtifacts artifacts: 'backend-pays/coverage.xml, backend-central/coverage.xml', fingerprint: true
-                echo "Images Docker construites : futurekawa/backend-pays:latest, futurekawa/backend-central:latest"
+                sh "docker build -t futurekawa/backend-pays:${IMAGE_TAG} ./backend-pays"
+                sh "docker tag futurekawa/backend-pays:${IMAGE_TAG} futurekawa/backend-pays:latest"
+                sh "docker build -t futurekawa/backend-central:${IMAGE_TAG} ./backend-central"
+                sh "docker tag futurekawa/backend-central:${IMAGE_TAG} futurekawa/backend-central:latest"
+                echo "Images construites : futurekawa/backend-pays:latest, futurekawa/backend-central:latest"
             }
         }
     }
