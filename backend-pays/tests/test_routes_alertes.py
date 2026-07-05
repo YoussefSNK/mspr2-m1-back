@@ -1,7 +1,6 @@
 """
 TDD — Tests des routes API /api/alertes.
 """
-import pytest
 from unittest.mock import patch
 
 

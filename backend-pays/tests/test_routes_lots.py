@@ -1,8 +1,6 @@
 """
 TDD — Tests des routes API /api/lots (via TestClient + SQLite en mémoire).
 """
-import pytest
-from datetime import datetime, timezone, timedelta
 
 
 class TestGetLots:
@@ -143,7 +141,7 @@ class TestFifoLots:
         response = client.get("/api/lots/fifo")
         assert response.status_code == 200
         lots = response.json()
-        codes = [l["lot_code"] for l in lots]
+        codes = [lot["lot_code"] for lot in lots]
         assert "LOT-CONFORME" in codes
         assert "LOT-EXPEDIE" not in codes
         assert "LOT-PERIME" not in codes

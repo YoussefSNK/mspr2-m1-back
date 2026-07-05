@@ -1,6 +1,5 @@
 import json
 import logging
-from datetime import datetime, timezone
 
 import paho.mqtt.client as mqtt
 from sqlalchemy.orm import Session

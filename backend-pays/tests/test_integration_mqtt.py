@@ -5,7 +5,6 @@ Format réel Raspberry Pi :
   Payload : {"timestamp": 1718615743, "temperature": 28.4, "humidity": 55.2, "status": "OK"}
 """
 import json
-import pytest
 from unittest.mock import patch, MagicMock
 
 from app.services.mqtt_service import _on_message, _parse_topic

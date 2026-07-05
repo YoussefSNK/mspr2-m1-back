@@ -6,7 +6,6 @@ en mockant les backends pays via respx. Ces tests couvrent les branches
 d'erreur (pays inconnu, timeout, HTTP 500, indisponibilité) que les tests
 de routes ne traversent pas isolément.
 """
-import pytest
 import respx
 import httpx
 

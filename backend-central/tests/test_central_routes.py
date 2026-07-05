@@ -2,10 +2,8 @@
 TDD — Tests du backend central siège.
 On mocke les backends pays via respx (mock httpx).
 """
-import pytest
 import respx
 import httpx
-from unittest.mock import patch
 
 
 LOTS_BRESIL = [
